@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        line {
+            stroke: #1a1a1b;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+    </style>
+    <!-- Base -->
+    <line x1="15" y1="105" x2="105" y2="105" />
+    <!-- Vertical pole -->
+    <line x1="30" y1="105" x2="30" y2="15" />
+    <!-- Top beam -->
+    <line x1="30" y1="15" x2="75" y2="15" />
+    <!-- Noose -->
+    <line x1="75" y1="15" x2="75" y2="30" />
+</svg>
