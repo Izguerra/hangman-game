@@ -253,7 +253,7 @@ class HangmanGame {
     }
 
     updateTriesDisplay() {
-        document.getElementById('tries').textContent = `Tries left: ${this.triesLeft}`;
+        document.getElementById('tries').textContent = `Remaining attempts: ${this.triesLeft}`;
     }
 
     hasWon() {
@@ -286,7 +286,7 @@ class HangmanGame {
 
     generateShareText(won) {
         const emoji = won ? '🎉' : '😢';
-        return `Hangman ${emoji}\nWord: ${this.currentWord}\nTries left: ${this.triesLeft}`;
+        return `Hangman ${emoji}\nWord: ${this.currentWord}\nRemaining attempts: ${this.triesLeft}`;
     }
 
     shareToWhatsApp() {
