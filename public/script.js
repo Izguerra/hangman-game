@@ -1,11 +1,3 @@
-import { 
-    auth, 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged 
-} from './firebase-config.js';
-
 class HangmanGame {
     constructor() {
         this.words = {
@@ -25,9 +17,6 @@ class HangmanGame {
         // Initialize theme
         this.currentTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', this.currentTheme);
-        
-        // Initialize game
-        this.initializeGame();
 
         // Auth related elements
         this.loginBtn = document.getElementById('login-btn');
@@ -40,16 +29,21 @@ class HangmanGame {
         this.userDisplay = document.getElementById('user-display');
         this.playGuestButtons = document.querySelectorAll('.play-guest-btn');
         
-        this.currentUser = null;
-        this.setupAuthListeners();
-
         // Setup menu elements
         this.menuToggle = document.getElementById('menu-toggle');
         this.closeMenu = document.getElementById('close-menu');
         this.sidebarMenu = document.getElementById('sidebar-menu');
         this.historyList = document.getElementById('history-list');
         
+        // Initialize Firebase Auth
+        this.auth = firebase.auth();
+        this.currentUser = null;
+        
+        // Initialize game and setup listeners
         this.setupEventListeners();
+        this.setupAuthListeners();
+        this.createKeyboard();
+        this.startNewGame();
     }
 
     initializeGame() {
@@ -335,7 +329,7 @@ class HangmanGame {
 
     setupAuthListeners() {
         // Auth state changes
-        onAuthStateChanged(auth, (user) => {
+        this.auth.onAuthStateChanged((user) => {
             this.currentUser = user;
             this.updateUIForAuth();
             if (user) {
@@ -358,7 +352,7 @@ class HangmanGame {
         // Logout button
         this.logoutBtn.addEventListener('click', async () => {
             try {
-                await signOut(auth);
+                await this.auth.signOut();
                 this.currentUser = null;
                 this.updateUIForAuth();
             } catch (error) {
@@ -373,7 +367,7 @@ class HangmanGame {
             const password = document.getElementById('login-password').value;
 
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                await this.auth.signInWithEmailAndPassword(email, password);
                 this.loginModal.style.display = 'none';
                 this.loginForm.reset();
             } catch (error) {
@@ -389,7 +383,7 @@ class HangmanGame {
             const password = document.getElementById('signup-password').value;
 
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
+                await this.auth.createUserWithEmailAndPassword(email, password);
                 this.signupModal.style.display = 'none';
                 this.signupForm.reset();
             } catch (error) {
