@@ -1,7 +1,3 @@
-[build]
-publish = "/"
-command = ""
-
 [[redirects]]
 from = "/*"
 to = "/index.html"
