@@ -64,9 +64,14 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    padding: 0.5rem 1rem;
+    padding: 1rem;
     width: 100%;
+}
+
+.header-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
 }
 
 .header-buttons {
@@ -76,23 +81,25 @@ header {
 }
 
 .auth-buttons {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
     display: flex;
     gap: 0.5rem;
 }
 
 .auth-btn {
-    padding: 0.25rem 0.75rem;
-    border: 1px solid var(--color-border);
+    padding: 0.5rem 1rem;
+    border: none;
     border-radius: 4px;
-    background: none;
+    background-color: var(--color-border);
     color: var(--color-text);
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: background-color 0.3s ease;
 }
 
 .auth-btn:hover {
-    background-color: var(--color-border);
+    background-color: var(--color-key-hover);
 }
 
 .theme-toggle {
@@ -129,11 +136,12 @@ h1 {
 }
 
 .game-container {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
-    padding: 0;
+    padding: 2rem;
+    gap: 1.5rem;
 }
 
 .hangman-box {
@@ -326,12 +334,6 @@ h1 {
     height: 16px;
 }
 
-.user-info {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 16px;
-}
-
 .auth-modal {
     max-width: 400px;
     padding: 2rem;
@@ -468,6 +470,110 @@ h1 {
 
 .link-btn:hover {
     opacity: 0.8;
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--color-text);
+}
+
+.menu-toggle:hover {
+    color: var(--color-key-hover);
+}
+
+.sidebar-menu {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: 300px;
+    height: 100vh;
+    background-color: var(--color-background);
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+.sidebar-menu.open {
+    right: 0;
+}
+
+.sidebar-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-menu {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text);
+}
+
+.close-menu:hover {
+    color: var(--color-key-hover);
+}
+
+.game-history {
+    margin-top: 2rem;
+}
+
+.game-history h3 {
+    margin-bottom: 1rem;
+    color: var(--color-text);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.history-item {
+    padding: 0.5rem;
+    background-color: var(--color-border);
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.history-item .word {
+    font-weight: bold;
+}
+
+.history-item .result {
+    color: var(--color-key-hover);
+}
+
+.auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--color-border);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.auth-btn:hover {
+    background-color: var(--color-key-hover);
 }
 
 @media (max-width: 500px) {

@@ -12,12 +12,7 @@
         <header>
             <div class="header-content">
                 <h1>HANGMAN</h1>
-                <div class="header-buttons">
-                    <div id="auth-buttons" class="auth-buttons">
-                        <button id="login-btn" class="auth-btn">Login</button>
-                        <button id="signup-btn" class="auth-btn">Sign Up</button>
-                        <button id="logout-btn" class="auth-btn" style="display: none;">Logout</button>
-                    </div>
+                <div class="header-controls">
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                         <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="5"></circle>
@@ -34,10 +29,38 @@
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                     </button>
+                    <button id="menu-toggle" class="menu-toggle" aria-label="Toggle menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div class="divider"></div>
         </header>
+
+        <!-- Sidebar Menu -->
+        <div id="sidebar-menu" class="sidebar-menu">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h2>Menu</h2>
+                    <button id="close-menu" class="close-menu">&times;</button>
+                </div>
+                <div id="auth-buttons" class="auth-buttons">
+                    <button id="login-btn" class="auth-btn">Login</button>
+                    <button id="signup-btn" class="auth-btn">Sign Up</button>
+                    <button id="logout-btn" class="auth-btn" style="display: none;">Logout</button>
+                </div>
+                <div id="game-history" class="game-history">
+                    <h3>Game History</h3>
+                    <div id="history-list" class="history-list">
+                        <!-- Game history will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Auth Modals -->
         <div id="login-modal" class="modal">
@@ -67,9 +90,6 @@
         </div>
 
         <div class="game-container">
-            <div id="user-info" class="user-info">
-                Playing as: <span id="user-display">Guest</span>
-            </div>
             <div class="hangman-box">
                 <svg class="hangman-drawing" viewBox="0 0 200 250">
                     <!-- Base -->
@@ -94,7 +114,6 @@
                     <line x1="160" y1="150" x2="190" y2="180" class="hangman-part"/>
                 </svg>
             </div>
-
             <div id="word" class="word"></div>
             <div id="message" class="message"></div>
             <div id="tries" class="tries"></div>
@@ -107,21 +126,24 @@
         <div class="modal-content">
             <h2 id="game-over-title"></h2>
             <p id="game-over-message"></p>
-            <p id="word-reveal"></p>
-            <button id="play-again" class="play-again-btn">Play Again</button>
-            
             <div class="share-section">
-                <h3>Share Your Results</h3>
-                <div class="share-preview"></div>
-                <canvas id="share-canvas" style="display: none;"></canvas>
+                <p>Share your result:</p>
                 <div class="share-buttons">
-                    <button id="share-whatsapp" class="share-btn whatsapp">Share on WhatsApp</button>
-                    <button id="share-text" class="share-btn text">Copy Text</button>
+                    <button id="share-whatsapp" class="share-btn whatsapp">
+                        <img src="whatsapp-icon.png" alt="WhatsApp">
+                    </button>
+                    <button id="share-clipboard" class="share-btn clipboard">
+                        <img src="clipboard-icon.png" alt="Copy to clipboard">
+                    </button>
                 </div>
             </div>
+            <button id="play-again" class="play-again-btn">Play Again</button>
+            <button class="modal-close">&times;</button>
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth-compat.js"></script>
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>

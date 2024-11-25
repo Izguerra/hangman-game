@@ -42,6 +42,14 @@ class HangmanGame {
         
         this.currentUser = null;
         this.setupAuthListeners();
+
+        // Setup menu elements
+        this.menuToggle = document.getElementById('menu-toggle');
+        this.closeMenu = document.getElementById('close-menu');
+        this.sidebarMenu = document.getElementById('sidebar-menu');
+        this.historyList = document.getElementById('history-list');
+        
+        this.setupEventListeners();
     }
 
     initializeGame() {
@@ -75,6 +83,19 @@ class HangmanGame {
         // Share buttons
         document.getElementById('share-whatsapp').addEventListener('click', () => this.shareToWhatsApp());
         document.getElementById('share-text').addEventListener('click', () => this.shareToMessages());
+
+        // Add menu toggle listeners
+        this.menuToggle.addEventListener('click', () => this.toggleMenu());
+        this.closeMenu.addEventListener('click', () => this.toggleMenu());
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (this.sidebarMenu.classList.contains('open') &&
+                !this.sidebarMenu.contains(e.target) &&
+                !this.menuToggle.contains(e.target)) {
+                this.toggleMenu();
+            }
+        });
     }
 
     toggleTheme() {
@@ -272,6 +293,11 @@ class HangmanGame {
 
         modal.classList.add('show');
         this.updateSharePreview(won);
+        
+        // Save game to history
+        if (this.currentUser) {
+            this.saveGameToHistory(this.currentWord, won);
+        }
     }
 
     hideModal() {
@@ -312,6 +338,11 @@ class HangmanGame {
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
             this.updateUIForAuth();
+            if (user) {
+                this.loadGameHistory();
+            } else {
+                this.clearGameHistory();
+            }
         });
 
         // Login button
@@ -397,6 +428,55 @@ class HangmanGame {
         });
     }
 
+    async saveGameToHistory(word, won) {
+        if (!this.currentUser) return;
+
+        const gameData = {
+            word: word,
+            won: won,
+            timestamp: new Date().toISOString(),
+            triesLeft: this.triesLeft
+        };
+
+        try {
+            const userRef = firebase.firestore().collection('users').doc(this.currentUser.uid);
+            const historyRef = userRef.collection('gameHistory');
+            await historyRef.add(gameData);
+            this.loadGameHistory();
+        } catch (error) {
+            console.error('Error saving game history:', error);
+        }
+    }
+
+    async loadGameHistory() {
+        if (!this.currentUser) return;
+
+        try {
+            const userRef = firebase.firestore().collection('users').doc(this.currentUser.uid);
+            const historyRef = userRef.collection('gameHistory');
+            const snapshot = await historyRef.orderBy('timestamp', 'desc').limit(10).get();
+
+            this.historyList.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <span class="word">${data.word}</span> - 
+                    <span class="result">${data.won ? 'Won' : 'Lost'}</span>
+                    <span class="tries">(${data.triesLeft} tries left)</span>
+                `;
+                this.historyList.appendChild(historyItem);
+            });
+        } catch (error) {
+            console.error('Error loading game history:', error);
+        }
+    }
+
+    clearGameHistory() {
+        this.historyList.innerHTML = '<p>Login to see your game history</p>';
+    }
+
     updateUIForAuth() {
         if (this.currentUser) {
             this.loginBtn.style.display = 'none';
@@ -409,6 +489,10 @@ class HangmanGame {
             this.logoutBtn.style.display = 'none';
             this.userDisplay.textContent = 'Guest';
         }
+    }
+
+    toggleMenu() {
+        this.sidebarMenu.classList.toggle('open');
     }
 }
 
