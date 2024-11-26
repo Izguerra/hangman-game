@@ -65,7 +65,8 @@ class HangmanGame {
             playAgainBtn: document.getElementById('play-again'),
             whatsappShareBtn: document.getElementById('whatsapp-share'),
             copyResultBtn: document.getElementById('copy-result'),
-            themeToggle: document.getElementById('theme-toggle')
+            themeToggle: document.getElementById('theme-toggle'),
+            newGameBtn: document.getElementById('new-game-btn')
         };
 
         // Assign elements to instance
@@ -97,6 +98,9 @@ class HangmanGame {
 
         // Theme toggle
         this.themeToggle?.addEventListener('click', () => this.toggleTheme());
+
+        // New game button
+        this.newGameBtn?.addEventListener('click', () => this.startNewGame());
 
         // Play again button
         this.playAgainBtn?.addEventListener('click', () => {
