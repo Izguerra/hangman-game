@@ -5,9 +5,17 @@ class HangmanGame {
         // Initialize Firebase
         this.auth = auth;
         this.db = db;
-        this.setupAuthUI();
         
-        // Rest of the initialization
+        // Wait for DOM content to be loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
+    }
+
+    init() {
+        this.setupAuthUI();
         this.initializeGame();
     }
 
@@ -20,6 +28,8 @@ class HangmanGame {
             sports: ['SOCCER', 'BASKETBALL', 'TENNIS', 'VOLLEYBALL', 'BASEBALL', 'CRICKET', 'RUGBY', 'GOLF', 'HOCKEY', 'BOXING'],
             foodAndDrinks: ['PIZZA', 'SUSHI', 'BURGER', 'PASTA', 'TACO', 'COFFEE', 'WINE', 'BEER', 'JUICE', 'WATER']
         };
+
+        // Initialize game state
         this.usedWords = new Set();
         this.maxTries = 6;
         this.currentWord = '';
@@ -31,7 +41,17 @@ class HangmanGame {
         this.currentTheme = localStorage.getItem('theme') || 'light';
         document.body.classList.toggle('dark-theme', this.currentTheme === 'dark');
 
-        // DOM Elements
+        // Get DOM Elements
+        this.getDOMElements();
+        
+        // Set up event listeners
+        this.setupEventListeners();
+        
+        // Start new game
+        this.startNewGame();
+    }
+
+    getDOMElements() {
         this.wordDisplay = document.getElementById('word-display');
         this.keyboard = document.getElementById('keyboard');
         this.messageDisplay = document.getElementById('message');
@@ -41,18 +61,36 @@ class HangmanGame {
         this.gameOverTitle = document.getElementById('game-over-title');
         this.gameOverMessage = document.getElementById('game-over-message');
         this.newGameBtn = document.getElementById('new-game-btn');
-        this.shareBtn = document.getElementById('share-btn');
+        this.whatsappShareBtn = document.getElementById('whatsapp-share');
+        this.copyResultBtn = document.getElementById('copy-result');
         this.themeToggle = document.querySelector('.theme-toggle');
-        
-        // Event Listeners
-        this.keyboard.addEventListener('click', (e) => this.handleKeyClick(e));
+
+        // Verify all required elements exist
+        const requiredElements = [
+            this.wordDisplay,
+            this.keyboard,
+            this.messageDisplay,
+            this.categoryDisplay,
+            this.hangmanSvg,
+            this.gameOverModal,
+            this.gameOverTitle,
+            this.gameOverMessage,
+            this.newGameBtn,
+            this.themeToggle
+        ];
+
+        if (requiredElements.some(element => !element)) {
+            throw new Error('Required DOM elements not found');
+        }
+    }
+
+    setupEventListeners() {
+        this.keyboard?.addEventListener('click', (e) => this.handleKeyClick(e));
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        this.newGameBtn.addEventListener('click', () => this.startNewGame());
-        this.shareBtn.addEventListener('click', () => this.shareResult());
-        this.themeToggle.addEventListener('click', () => this.toggleTheme());
-        
-        // Initialize the game
-        this.startNewGame();
+        this.newGameBtn?.addEventListener('click', () => this.startNewGame());
+        this.whatsappShareBtn?.addEventListener('click', () => this.shareOnWhatsApp());
+        this.copyResultBtn?.addEventListener('click', () => this.copyResult());
+        this.themeToggle?.addEventListener('click', () => this.toggleTheme());
     }
 
     setupAuthUI() {
@@ -62,55 +100,43 @@ class HangmanGame {
         const signupModal = document.getElementById('signup-modal');
         const loginLink = document.getElementById('login-link');
         const signupLink = document.getElementById('signup-link');
-        const loginBtn = document.getElementById('login-btn');
-        const signupBtn = document.getElementById('signup-btn');
-        const guestBtn = document.getElementById('guest-btn');
+        const loginGuestBtn = document.getElementById('login-guest-btn');
+        const signupGuestBtn = document.getElementById('signup-guest-btn');
         const logoutBtn = document.getElementById('logout-btn');
 
-        // Show/hide modals
-        loginBtn?.addEventListener('click', () => {
-            loginModal.style.display = 'flex';
-            signupModal.style.display = 'none';
-        });
+        // Show login modal by default
+        loginModal.style.display = 'flex';
 
-        signupBtn?.addEventListener('click', () => {
-            signupModal.style.display = 'flex';
-            loginModal.style.display = 'none';
-        });
-
-        guestBtn?.addEventListener('click', () => {
-            loginModal.style.display = 'none';
-            signupModal.style.display = 'none';
-        });
-
-        // Switch between login and signup
+        // Switch between login and signup modals
         loginLink?.addEventListener('click', (e) => {
             e.preventDefault();
-            loginModal.style.display = 'flex';
             signupModal.style.display = 'none';
+            loginModal.style.display = 'flex';
         });
 
         signupLink?.addEventListener('click', (e) => {
             e.preventDefault();
-            signupModal.style.display = 'flex';
             loginModal.style.display = 'none';
+            signupModal.style.display = 'flex';
         });
 
-        // Close modals when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === loginModal) {
-                loginModal.style.display = 'none';
-            }
-            if (e.target === signupModal) {
-                signupModal.style.display = 'none';
-            }
-        });
+        // Handle guest mode
+        const handleGuestMode = () => {
+            loginModal.style.display = 'none';
+            signupModal.style.display = 'none';
+            this.updateAuthUI(false);
+        };
 
-        // Handle form submissions
+        loginGuestBtn?.addEventListener('click', handleGuestMode);
+        signupGuestBtn?.addEventListener('click', handleGuestMode);
+
+        // Handle login
         loginForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+            const email = document.getElementById('login-email')?.value;
+            const password = document.getElementById('login-password')?.value;
+
+            if (!email || !password) return;
 
             try {
                 await signInWithEmailAndPassword(this.auth, email, password);
@@ -121,10 +147,13 @@ class HangmanGame {
             }
         });
 
+        // Handle signup
         signupForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
+            const email = document.getElementById('signup-email')?.value;
+            const password = document.getElementById('signup-password')?.value;
+
+            if (!email || !password) return;
 
             try {
                 await createUserWithEmailAndPassword(this.auth, email, password);
@@ -135,6 +164,7 @@ class HangmanGame {
             }
         });
 
+        // Handle logout
         logoutBtn?.addEventListener('click', async () => {
             try {
                 await signOut(this.auth);
@@ -142,11 +172,6 @@ class HangmanGame {
             } catch (error) {
                 console.error('Error signing out:', error);
             }
-        });
-
-        // Listen for auth state changes
-        this.auth.onAuthStateChanged((user) => {
-            this.updateAuthUI(!!user);
         });
     }
 
@@ -286,19 +311,17 @@ class HangmanGame {
         this.gameOverModal.style.display = 'flex';
     }
 
-    shareResult() {
+    shareOnWhatsApp() {
         const result = `Hangman Game Result\n${this.gameOverTitle.textContent}\n${this.gameOverMessage.textContent}`;
-        
-        if (navigator.share) {
-            navigator.share({
-                title: 'Hangman Game Result',
-                text: result
-            }).catch(console.error);
-        } else {
-            navigator.clipboard.writeText(result)
-                .then(() => alert('Result copied to clipboard!'))
-                .catch(console.error);
-        }
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(result)}`;
+        window.open(url, '_blank');
+    }
+
+    copyResult() {
+        const result = `Hangman Game Result\n${this.gameOverTitle.textContent}\n${this.gameOverMessage.textContent}`;
+        navigator.clipboard.writeText(result)
+            .then(() => alert('Result copied to clipboard!'))
+            .catch(console.error);
     }
 
     toggleTheme() {
