@@ -52,146 +52,160 @@ class HangmanGame {
     }
 
     getDOMElements() {
-        this.wordDisplay = document.getElementById('word-display');
-        this.keyboard = document.getElementById('keyboard');
-        this.messageDisplay = document.getElementById('message');
-        this.categoryDisplay = document.getElementById('category');
-        this.hangmanSvg = document.getElementById('hangman');
-        this.gameOverModal = document.getElementById('game-over-modal');
-        this.gameOverTitle = document.getElementById('game-over-title');
-        this.gameOverMessage = document.getElementById('game-over-message');
-        this.newGameBtn = document.getElementById('new-game-btn');
-        this.whatsappShareBtn = document.getElementById('whatsapp-share');
-        this.copyResultBtn = document.getElementById('copy-result');
-        this.themeToggle = document.querySelector('.theme-toggle');
+        // Get all required DOM elements
+        const elements = {
+            wordDisplay: document.getElementById('word-display'),
+            keyboard: document.getElementById('keyboard'),
+            messageDisplay: document.getElementById('message'),
+            categoryDisplay: document.getElementById('category'),
+            hangmanSvg: document.getElementById('hangman'),
+            gameOverModal: document.getElementById('game-over-modal'),
+            gameOverTitle: document.getElementById('game-over-title'),
+            gameOverMessage: document.getElementById('game-over-message'),
+            playAgainBtn: document.getElementById('play-again'),
+            whatsappShareBtn: document.getElementById('whatsapp-share'),
+            copyResultBtn: document.getElementById('copy-result'),
+            themeToggle: document.getElementById('theme-toggle')
+        };
 
-        // Verify all required elements exist
-        const requiredElements = [
-            this.wordDisplay,
-            this.keyboard,
-            this.messageDisplay,
-            this.categoryDisplay,
-            this.hangmanSvg,
-            this.gameOverModal,
-            this.gameOverTitle,
-            this.gameOverMessage,
-            this.newGameBtn,
-            this.themeToggle
-        ];
+        // Assign elements to instance
+        Object.assign(this, elements);
 
-        if (requiredElements.some(element => !element)) {
-            throw new Error('Required DOM elements not found');
+        // Check for required elements
+        const required = ['wordDisplay', 'keyboard', 'messageDisplay', 'categoryDisplay', 'hangmanSvg'];
+        const missing = required.filter(key => !elements[key]);
+        
+        if (missing.length > 0) {
+            console.error('Missing required DOM elements:', missing);
+            throw new Error(`Required DOM elements not found: ${missing.join(', ')}`);
         }
     }
 
     setupEventListeners() {
         // Keyboard clicks
-        this.keyboard?.addEventListener('click', (e) => {
-            if (e.target.classList.contains('key')) {
-                this.handleKeyClick(e);
-            }
-        });
+        if (this.keyboard) {
+            this.keyboard.addEventListener('click', (e) => {
+                const key = e.target.closest('.key');
+                if (key) {
+                    this.handleKeyClick(e);
+                }
+            });
+        }
 
         // Physical keyboard input
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
 
         // Theme toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle?.addEventListener('click', () => this.toggleTheme());
+        this.themeToggle?.addEventListener('click', () => this.toggleTheme());
 
         // Play again button
-        const playAgainBtn = document.getElementById('play-again');
-        playAgainBtn?.addEventListener('click', () => {
-            this.gameOverModal.style.display = 'none';
+        this.playAgainBtn?.addEventListener('click', () => {
+            if (this.gameOverModal) {
+                this.gameOverModal.style.display = 'none';
+            }
             this.startNewGame();
         });
 
         // Share buttons
-        const whatsappShare = document.getElementById('whatsapp-share');
-        whatsappShare?.addEventListener('click', () => this.shareOnWhatsApp());
-
-        const copyResult = document.getElementById('copy-result');
-        copyResult?.addEventListener('click', () => this.copyResult());
+        this.whatsappShareBtn?.addEventListener('click', () => this.shareOnWhatsApp());
+        this.copyResultBtn?.addEventListener('click', () => this.copyResult());
     }
 
     setupAuthUI() {
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        const loginModal = document.getElementById('login-modal');
-        const signupModal = document.getElementById('signup-modal');
-        const loginLink = document.getElementById('login-link');
-        const signupLink = document.getElementById('signup-link');
-        const loginGuestBtn = document.getElementById('login-guest-btn');
-        const signupGuestBtn = document.getElementById('signup-guest-btn');
-        const logoutBtn = document.getElementById('logout-btn');
+        const elements = {
+            loginForm: document.getElementById('login-form'),
+            signupForm: document.getElementById('signup-form'),
+            loginModal: document.getElementById('login-modal'),
+            signupModal: document.getElementById('signup-modal'),
+            loginLink: document.getElementById('login-link'),
+            signupLink: document.getElementById('signup-link'),
+            loginGuest: document.getElementById('login-guest'),
+            signupGuest: document.getElementById('signup-guest'),
+            logoutBtn: document.getElementById('logout-btn')
+        };
 
         // Show login modal by default
-        loginModal.style.display = 'flex';
+        if (elements.loginModal) {
+            elements.loginModal.style.display = 'flex';
+        }
 
         // Switch between login and signup modals
-        loginLink?.addEventListener('click', (e) => {
+        elements.loginLink?.addEventListener('click', (e) => {
             e.preventDefault();
-            signupModal.style.display = 'none';
-            loginModal.style.display = 'flex';
+            if (elements.signupModal) elements.signupModal.style.display = 'none';
+            if (elements.loginModal) elements.loginModal.style.display = 'flex';
         });
 
-        signupLink?.addEventListener('click', (e) => {
+        elements.signupLink?.addEventListener('click', (e) => {
             e.preventDefault();
-            loginModal.style.display = 'none';
-            signupModal.style.display = 'flex';
+            if (elements.loginModal) elements.loginModal.style.display = 'none';
+            if (elements.signupModal) elements.signupModal.style.display = 'flex';
         });
 
         // Handle guest mode
         const handleGuestMode = () => {
-            loginModal.style.display = 'none';
-            signupModal.style.display = 'none';
+            if (elements.loginModal) elements.loginModal.style.display = 'none';
+            if (elements.signupModal) elements.signupModal.style.display = 'none';
             this.updateAuthUI(false);
+            this.startNewGame();
         };
 
-        loginGuestBtn?.addEventListener('click', handleGuestMode);
-        signupGuestBtn?.addEventListener('click', handleGuestMode);
+        elements.loginGuest?.addEventListener('click', handleGuestMode);
+        elements.signupGuest?.addEventListener('click', handleGuestMode);
 
         // Handle login
-        loginForm?.addEventListener('submit', async (e) => {
+        elements.loginForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email')?.value;
             const password = document.getElementById('login-password')?.value;
 
-            if (!email || !password) return;
+            if (!email || !password) {
+                console.error('Email or password missing');
+                return;
+            }
 
             try {
                 await signInWithEmailAndPassword(this.auth, email, password);
-                loginModal.style.display = 'none';
+                if (elements.loginModal) elements.loginModal.style.display = 'none';
                 this.updateAuthUI(true);
+                this.startNewGame();
             } catch (error) {
+                console.error('Login error:', error);
                 alert(error.message);
             }
         });
 
         // Handle signup
-        signupForm?.addEventListener('submit', async (e) => {
+        elements.signupForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('signup-email')?.value;
             const password = document.getElementById('signup-password')?.value;
 
-            if (!email || !password) return;
+            if (!email || !password) {
+                console.error('Email or password missing');
+                return;
+            }
 
             try {
                 await createUserWithEmailAndPassword(this.auth, email, password);
-                signupModal.style.display = 'none';
+                if (elements.signupModal) elements.signupModal.style.display = 'none';
                 this.updateAuthUI(true);
+                this.startNewGame();
             } catch (error) {
+                console.error('Signup error:', error);
                 alert(error.message);
             }
         });
 
         // Handle logout
-        logoutBtn?.addEventListener('click', async () => {
+        elements.logoutBtn?.addEventListener('click', async () => {
             try {
                 await signOut(this.auth);
                 this.updateAuthUI(false);
+                this.startNewGame();
             } catch (error) {
-                console.error('Error signing out:', error);
+                console.error('Logout error:', error);
+                alert('Error signing out: ' + error.message);
             }
         });
     }
