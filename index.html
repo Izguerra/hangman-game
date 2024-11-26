@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hangman Game</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Modern Hangman</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Clear+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -13,7 +13,7 @@
             <div class="header-content">
                 <h1>HANGMAN</h1>
                 <div class="header-controls">
-                    <button class="theme-toggle clean-icon-btn" aria-label="Toggle theme">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                         <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="5"></circle>
                             <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -29,138 +29,121 @@
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                     </button>
-                    <button id="login-btn" class="clean-icon-btn" aria-label="Login">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
-                        </svg>
-                    </button>
-                    <button id="logout-btn" style="display: none;" aria-label="Logout">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                    </button>
-                    <span id="user-display"></span>
                 </div>
             </div>
-            <div class="divider"></div>
+            <div class="auth-section">
+                <div class="auth-buttons">
+                    <button id="login-btn" class="auth-btn">Login</button>
+                    <button id="signup-btn" class="auth-btn">Sign Up</button>
+                </div>
+                <div class="user-info">
+                    <span id="user-email"></span>
+                    <button id="logout-btn" class="auth-btn">Logout</button>
+                </div>
+            </div>
         </header>
-
-        <!-- Sidebar Menu -->
-        <div id="sidebar-menu" class="sidebar-menu">
-            <div class="sidebar-content">
-                <div class="sidebar-header">
-                    <h2>Menu</h2>
-                    <button id="close-menu" class="close-menu">&times;</button>
-                </div>
-                <div id="game-history" class="game-history">
-                    <h3>Game History</h3>
-                    <div id="history-list" class="history-list">
-                        <!-- Game history will be populated here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Auth Modals -->
-        <div id="login-modal" class="modal">
-            <div class="modal-content auth-modal">
-                <h2>Login</h2>
-                <form id="login-form" class="auth-form">
-                    <input type="email" id="login-email" placeholder="Email" required>
-                    <input type="password" id="login-password" placeholder="Password" required>
-                    <button type="submit" class="auth-submit">Login</button>
-                </form>
-                <div class="auth-links">
-                    <span>Don't have an account? </span>
-                    <a class="auth-link" id="show-signup">Sign Up</a>
-                </div>
-                <button class="play-guest-btn">Play as Guest</button>
-                <button class="modal-close">&times;</button>
-            </div>
-        </div>
-
-        <div id="signup-modal" class="modal">
-            <div class="modal-content auth-modal">
-                <h2>Sign Up</h2>
-                <form id="signup-form" class="auth-form">
-                    <input type="email" id="signup-email" placeholder="Email" required>
-                    <input type="password" id="signup-password" placeholder="Password" required>
-                    <button type="submit" class="auth-submit">Sign Up</button>
-                </form>
-                <div class="auth-links">
-                    <span>Already have an account? </span>
-                    <a class="auth-link" id="show-login">Login</a>
-                </div>
-                <button class="play-guest-btn">Play as Guest</button>
-                <button class="modal-close">&times;</button>
-            </div>
-        </div>
 
         <div class="game-container">
             <div class="hangman-box">
-                <svg class="hangman-drawing" viewBox="0 0 240 300" preserveAspectRatio="xMidYMid meet">
-                    <!-- Base -->
-                    <line x1="40" y1="280" x2="200" y2="280" class="hangman-part show"/>
-                    <!-- Vertical pole -->
-                    <line x1="120" y1="280" x2="120" y2="40" class="hangman-part show"/>
-                    <!-- Horizontal pole -->
-                    <line x1="120" y1="40" x2="200" y2="40" class="hangman-part show"/>
-                    <!-- Rope -->
-                    <line x1="200" y1="40" x2="200" y2="80" class="hangman-part show"/>
-                    <!-- Head -->
-                    <circle cx="200" cy="100" r="20" class="hangman-part" id="head"/>
-                    <!-- Body -->
-                    <line x1="200" y1="120" x2="200" y2="200" class="hangman-part" id="body"/>
-                    <!-- Left arm -->
-                    <line x1="200" y1="160" x2="160" y2="140" class="hangman-part" id="left-arm"/>
-                    <!-- Right arm -->
-                    <line x1="200" y1="160" x2="240" y2="140" class="hangman-part" id="right-arm"/>
-                    <!-- Left leg -->
-                    <line x1="200" y1="200" x2="160" y2="240" class="hangman-part" id="left-leg"/>
-                    <!-- Right leg -->
-                    <line x1="200" y1="200" x2="240" y2="240" class="hangman-part" id="right-leg"/>
+                <svg id="hangman" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Gallows - these lines should always be visible -->
+                    <line x1="20" y1="90" x2="80" y2="90" class="gallows-line"/>
+                    <line x1="30" y1="90" x2="30" y2="10" class="gallows-line"/>
+                    <line x1="30" y1="10" x2="70" y2="10" class="gallows-line"/>
+                    <line x1="70" y1="10" x2="70" y2="20" class="gallows-line"/>
+                    
+                    <!-- Body parts - these will be shown progressively -->
+                    <circle cx="70" cy="25" r="5" class="body-part"/> <!-- Head -->
+                    <line x1="70" y1="30" x2="70" y2="50" class="body-part"/> <!-- Body -->
+                    <line x1="70" y1="35" x2="60" y2="45" class="body-part"/> <!-- Left Arm -->
+                    <line x1="70" y1="35" x2="80" y2="45" class="body-part"/> <!-- Right Arm -->
+                    <line x1="70" y1="50" x2="60" y2="65" class="body-part"/> <!-- Left Leg -->
+                    <line x1="70" y1="50" x2="80" y2="65" class="body-part"/> <!-- Right Leg -->
                 </svg>
             </div>
-            <div id="word" class="word"></div>
-            <div id="message" class="message"></div>
-            <div id="tries" class="tries"></div>
-            <button id="new-game" class="new-game-btn">New Game</button>
-            <div id="keyboard" class="keyboard"></div>
+            <div class="game-info">
+                <p id="category"></p>
+                <div id="word-display" class="word-display"></div>
+                <p id="message" class="message"></p>
+            </div>
+        </div>
+
+        <div id="keyboard" class="keyboard">
+            <div class="keyboard-row">
+                <button class="key" data-key="Q">Q</button>
+                <button class="key" data-key="W">W</button>
+                <button class="key" data-key="E">E</button>
+                <button class="key" data-key="R">R</button>
+                <button class="key" data-key="T">T</button>
+                <button class="key" data-key="Y">Y</button>
+                <button class="key" data-key="U">U</button>
+                <button class="key" data-key="I">I</button>
+                <button class="key" data-key="O">O</button>
+                <button class="key" data-key="P">P</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key" data-key="A">A</button>
+                <button class="key" data-key="S">S</button>
+                <button class="key" data-key="D">D</button>
+                <button class="key" data-key="F">F</button>
+                <button class="key" data-key="G">G</button>
+                <button class="key" data-key="H">H</button>
+                <button class="key" data-key="J">J</button>
+                <button class="key" data-key="K">K</button>
+                <button class="key" data-key="L">L</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key" data-key="Z">Z</button>
+                <button class="key" data-key="X">X</button>
+                <button class="key" data-key="C">C</button>
+                <button class="key" data-key="V">V</button>
+                <button class="key" data-key="B">B</button>
+                <button class="key" data-key="N">N</button>
+                <button class="key" data-key="M">M</button>
+            </div>
         </div>
     </div>
 
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content auth-modal">
+            <h2>Login</h2>
+            <form id="login-form" class="auth-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit" class="auth-submit">Login</button>
+                <button type="button" id="guest-btn" class="guest-btn">Play as Guest</button>
+            </form>
+            <p>Don't have an account? <a href="#" id="signup-link">Sign up</a></p>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content auth-modal">
+            <h2>Sign Up</h2>
+            <form id="signup-form" class="auth-form">
+                <input type="email" id="signup-email" placeholder="Email" required>
+                <input type="password" id="signup-password" placeholder="Password" required>
+                <button type="submit" class="auth-submit">Sign Up</button>
+                <button type="button" id="guest-btn" class="guest-btn">Play as Guest</button>
+            </form>
+            <p>Already have an account? <a href="#" id="login-link">Login</a></p>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
     <div id="game-over-modal" class="modal">
         <div class="modal-content">
             <h2 id="game-over-title"></h2>
             <p id="game-over-message"></p>
-            <div class="share-section">
-                <p>Share your result:</p>
-                <div class="share-buttons">
-                    <button id="share-whatsapp" class="share-btn whatsapp">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                        </svg>
-                    </button>
-                    <button id="share-clipboard" class="share-btn clipboard">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                        </svg>
-                    </button>
-                </div>
+            <div class="modal-buttons">
+                <button id="new-game-btn" class="modal-btn">New Game</button>
+                <button id="share-btn" class="modal-btn">Share Result</button>
             </div>
-            <button id="play-again" class="play-again-btn">Play Again</button>
-            <button class="modal-close">&times;</button>
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-    
-    <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
