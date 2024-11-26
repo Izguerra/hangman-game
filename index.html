@@ -142,13 +142,21 @@
         <div class="modal-content">
             <h2 id="game-over-title"></h2>
             <p id="game-over-message"></p>
-            <div class="modal-buttons">
-                <button id="new-game-btn" class="modal-btn">New Game</button>
-                <button id="share-btn" class="modal-btn">Share Result</button>
+            <div class="share-buttons">
+                <button id="whatsapp-share" class="share-button">
+                    <img src="assets/whatsapp-icon.png" alt="Share on WhatsApp">
+                    Share on WhatsApp
+                </button>
+                <button id="copy-result" class="share-button">
+                    <img src="assets/clipboard-icon.png" alt="Copy to Clipboard">
+                    Copy Result
+                </button>
             </div>
+            <button id="new-game-btn" class="primary-button">New Game</button>
         </div>
     </div>
 
+    <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>

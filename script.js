@@ -48,11 +48,14 @@ class HangmanGame {
 
     async initializeFirebase() {
         try {
-            const app = await import('./firebase-config.js');
-            this.auth = app.auth;
+            const { auth, db } = await import('./firebase-config.js');
+            this.auth = auth;
+            this.db = db;
             this.setupAuthUI();
         } catch (error) {
             console.error('Error initializing Firebase:', error);
+            // Continue with the game even if Firebase fails
+            this.setupAuthUI();
         }
     }
 
