@@ -85,12 +85,33 @@ class HangmanGame {
     }
 
     setupEventListeners() {
-        this.keyboard?.addEventListener('click', (e) => this.handleKeyClick(e));
+        // Keyboard clicks
+        this.keyboard?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('key')) {
+                this.handleKeyClick(e);
+            }
+        });
+
+        // Physical keyboard input
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        this.newGameBtn?.addEventListener('click', () => this.startNewGame());
-        this.whatsappShareBtn?.addEventListener('click', () => this.shareOnWhatsApp());
-        this.copyResultBtn?.addEventListener('click', () => this.copyResult());
-        this.themeToggle?.addEventListener('click', () => this.toggleTheme());
+
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle?.addEventListener('click', () => this.toggleTheme());
+
+        // Play again button
+        const playAgainBtn = document.getElementById('play-again');
+        playAgainBtn?.addEventListener('click', () => {
+            this.gameOverModal.style.display = 'none';
+            this.startNewGame();
+        });
+
+        // Share buttons
+        const whatsappShare = document.getElementById('whatsapp-share');
+        whatsappShare?.addEventListener('click', () => this.shareOnWhatsApp());
+
+        const copyResult = document.getElementById('copy-result');
+        copyResult?.addEventListener('click', () => this.copyResult());
     }
 
     setupAuthUI() {
