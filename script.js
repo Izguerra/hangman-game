@@ -1,5 +1,17 @@
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './firebase-config.js';
+
 class HangmanGame {
     constructor() {
+        // Initialize Firebase
+        this.auth = auth;
+        this.db = db;
+        this.setupAuthUI();
+        
+        // Rest of the initialization
+        this.initializeGame();
+    }
+
+    initializeGame() {
         // Combined word list
         this.words = {
             programming: ['PYTHON', 'JAVASCRIPT', 'JAVA', 'HTML', 'CSS', 'REACT', 'ANGULAR', 'VUE', 'TYPESCRIPT', 'PHP'],
@@ -19,9 +31,6 @@ class HangmanGame {
         this.currentTheme = localStorage.getItem('theme') || 'light';
         document.body.classList.toggle('dark-theme', this.currentTheme === 'dark');
 
-        // Initialize Firebase
-        this.initializeFirebase();
-        
         // DOM Elements
         this.wordDisplay = document.getElementById('word-display');
         this.keyboard = document.getElementById('keyboard');
@@ -44,19 +53,6 @@ class HangmanGame {
         
         // Initialize the game
         this.startNewGame();
-    }
-
-    async initializeFirebase() {
-        try {
-            const { auth, db } = await import('./firebase-config.js');
-            this.auth = auth;
-            this.db = db;
-            this.setupAuthUI();
-        } catch (error) {
-            console.error('Error initializing Firebase:', error);
-            // Continue with the game even if Firebase fails
-            this.setupAuthUI();
-        }
     }
 
     setupAuthUI() {
@@ -117,7 +113,7 @@ class HangmanGame {
             const password = document.getElementById('login-password').value;
 
             try {
-                await this.auth.signInWithEmailAndPassword(email, password);
+                await signInWithEmailAndPassword(this.auth, email, password);
                 loginModal.style.display = 'none';
                 this.updateAuthUI(true);
             } catch (error) {
@@ -131,7 +127,7 @@ class HangmanGame {
             const password = document.getElementById('signup-password').value;
 
             try {
-                await this.auth.createUserWithEmailAndPassword(email, password);
+                await createUserWithEmailAndPassword(this.auth, email, password);
                 signupModal.style.display = 'none';
                 this.updateAuthUI(true);
             } catch (error) {
@@ -141,7 +137,7 @@ class HangmanGame {
 
         logoutBtn?.addEventListener('click', async () => {
             try {
-                await this.auth.signOut();
+                await signOut(this.auth);
                 this.updateAuthUI(false);
             } catch (error) {
                 console.error('Error signing out:', error);
