@@ -2,33 +2,50 @@ import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, s
 
 let game = null;
 
-// Initialize game when DOM is fully loaded
-window.addEventListener('load', () => {
-    console.log('Window loaded, initializing game...');
-    try {
-        game = new HangmanGame();
-        game.init();
-        console.log('Game initialized successfully');
-    } catch (error) {
-        console.error('Failed to initialize game:', error);
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
-        errorDiv.textContent = 'Failed to initialize game. Please refresh the page.';
-        document.body.appendChild(errorDiv);
-    }
-});
+// Helper function to show errors
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => errorDiv.remove(), 5000);
+}
 
 class HangmanGame {
     constructor() {
+        console.log('HangmanGame instance created');
+        
         // Initialize Firebase
         this.auth = auth;
         this.db = db;
-        console.log('HangmanGame instance created');
+
+        // Initialize game state
+        this.words = {
+            programming: ['PYTHON', 'JAVASCRIPT', 'JAVA', 'HTML', 'CSS', 'REACT', 'ANGULAR', 'VUE', 'TYPESCRIPT', 'PHP'],
+            animals: ['ELEPHANT', 'GIRAFFE', 'PENGUIN', 'KANGAROO', 'DOLPHIN', 'LION', 'TIGER', 'ZEBRA', 'MONKEY', 'PANDA'],
+            countries: ['CANADA', 'JAPAN', 'BRAZIL', 'AUSTRALIA', 'FRANCE', 'GERMANY', 'ITALY', 'SPAIN', 'INDIA', 'MEXICO'],
+            sports: ['SOCCER', 'BASKETBALL', 'TENNIS', 'VOLLEYBALL', 'BASEBALL', 'CRICKET', 'RUGBY', 'GOLF', 'HOCKEY', 'BOXING'],
+            foodAndDrinks: ['PIZZA', 'SUSHI', 'BURGER', 'PASTA', 'TACO', 'COFFEE', 'WINE', 'BEER', 'JUICE', 'WATER']
+        };
+        
+        this.usedWords = new Set();
+        this.maxTries = 6;
+        this.currentWord = '';
+        this.guessedLetters = new Set();
+        this.triesLeft = this.maxTries;
+        this.gameOver = false;
+        
+        // Initialize theme from localStorage
+        this.currentTheme = localStorage.getItem('theme') || 'light';
+        document.body.classList.toggle('dark-theme', this.currentTheme === 'dark');
     }
 
     init() {
         try {
             console.log('Initializing game...');
+            
             // Get DOM Elements first
             this.getDOMElements();
             
@@ -38,17 +55,13 @@ class HangmanGame {
             // Then set up auth UI
             this.setupAuthUI();
             
-            // Finally initialize game
-            this.initializeGame();
+            // Finally start new game
+            this.startNewGame();
             
             console.log('Game initialized successfully');
         } catch (error) {
             console.error('Initialization error:', error);
-            // Show user-friendly error
-            const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
-            errorDiv.textContent = 'Failed to initialize game. Please refresh the page.';
-            document.body.appendChild(errorDiv);
+            showError('Failed to initialize game. Please refresh the page.');
         }
     }
 
@@ -91,30 +104,135 @@ class HangmanGame {
         }
     }
 
-    initializeGame() {
-        // Combined word list
-        this.words = {
-            programming: ['PYTHON', 'JAVASCRIPT', 'JAVA', 'HTML', 'CSS', 'REACT', 'ANGULAR', 'VUE', 'TYPESCRIPT', 'PHP'],
-            animals: ['ELEPHANT', 'GIRAFFE', 'PENGUIN', 'KANGAROO', 'DOLPHIN', 'LION', 'TIGER', 'ZEBRA', 'MONKEY', 'PANDA'],
-            countries: ['CANADA', 'JAPAN', 'BRAZIL', 'AUSTRALIA', 'FRANCE', 'GERMANY', 'ITALY', 'SPAIN', 'INDIA', 'MEXICO'],
-            sports: ['SOCCER', 'BASKETBALL', 'TENNIS', 'VOLLEYBALL', 'BASEBALL', 'CRICKET', 'RUGBY', 'GOLF', 'HOCKEY', 'BOXING'],
-            foodAndDrinks: ['PIZZA', 'SUSHI', 'BURGER', 'PASTA', 'TACO', 'COFFEE', 'WINE', 'BEER', 'JUICE', 'WATER']
+    setupAuthUI() {
+        const elements = {
+            loginForm: document.getElementById('login-form'),
+            signupForm: document.getElementById('signup-form'),
+            loginModal: document.getElementById('login-modal'),
+            signupModal: document.getElementById('signup-modal'),
+            loginLink: document.getElementById('login-link'),
+            signupLink: document.getElementById('signup-link'),
+            loginGuest: document.getElementById('login-guest-btn'), // Updated ID
+            signupGuest: document.getElementById('signup-guest-btn'), // Updated ID
+            guestBtnMain: document.getElementById('guest-btn-main'),
+            logoutBtn: document.getElementById('logout-btn'),
+            userEmail: document.getElementById('user-email')
         };
 
-        // Initialize game state
-        this.usedWords = new Set();
-        this.maxTries = 6;
-        this.currentWord = '';
-        this.guessedLetters = new Set();
-        this.triesLeft = this.maxTries;
-        this.gameOver = false;
+        // Show login modal by default for non-authenticated users
+        if (!this.auth.currentUser && elements.loginModal) {
+            elements.loginModal.style.display = 'flex';
+        }
+
+        // Switch between login and signup modals
+        elements.loginLink?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (elements.signupModal) elements.signupModal.style.display = 'none';
+            if (elements.loginModal) elements.loginModal.style.display = 'flex';
+        });
+
+        elements.signupLink?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (elements.loginModal) elements.loginModal.style.display = 'none';
+            if (elements.signupModal) elements.signupModal.style.display = 'flex';
+        });
+
+        // Handle guest mode
+        const handleGuestMode = () => {
+            if (elements.loginModal) elements.loginModal.style.display = 'none';
+            if (elements.signupModal) elements.signupModal.style.display = 'none';
+            this.updateAuthUI(false);
+            this.startNewGame();
+        };
+
+        // Add guest mode handlers to all guest buttons
+        [elements.loginGuest, elements.signupGuest, elements.guestBtnMain].forEach(btn => {
+            if (btn) {
+                console.log('Adding guest mode handler to button:', btn.id);
+                btn.addEventListener('click', handleGuestMode);
+            } else {
+                console.warn('Guest button not found');
+            }
+        });
+
+        // Handle login
+        elements.loginForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email')?.value;
+            const password = document.getElementById('login-password')?.value;
+
+            if (!email || !password) {
+                showError('Email and password are required');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(this.auth, email, password);
+                if (elements.loginModal) elements.loginModal.style.display = 'none';
+                this.updateAuthUI(true, email);
+                this.startNewGame();
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(error.message);
+            }
+        });
+
+        // Handle signup
+        elements.signupForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email')?.value;
+            const password = document.getElementById('signup-password')?.value;
+
+            if (!email || !password) {
+                showError('Email and password are required');
+                return;
+            }
+
+            try {
+                await createUserWithEmailAndPassword(this.auth, email, password);
+                if (elements.signupModal) elements.signupModal.style.display = 'none';
+                this.updateAuthUI(true, email);
+                this.startNewGame();
+            } catch (error) {
+                console.error('Signup error:', error);
+                showError(error.message);
+            }
+        });
+
+        // Handle logout
+        elements.logoutBtn?.addEventListener('click', async () => {
+            try {
+                await signOut(this.auth);
+                this.updateAuthUI(false);
+                if (elements.loginModal) elements.loginModal.style.display = 'flex';
+            } catch (error) {
+                console.error('Logout error:', error);
+                showError('Error signing out: ' + error.message);
+            }
+        });
+
+        // Update UI based on initial auth state
+        this.auth.onAuthStateChanged((user) => {
+            this.updateAuthUI(!!user, user?.email);
+        });
+    }
+
+    updateAuthUI(isLoggedIn, email = '') {
+        const authButtons = document.querySelector('.auth-buttons');
+        const userInfo = document.querySelector('.user-info');
+        const userEmail = document.getElementById('user-email');
         
-        // Initialize theme
-        this.currentTheme = localStorage.getItem('theme') || 'light';
-        document.body.classList.toggle('dark-theme', this.currentTheme === 'dark');
-        
-        // Start new game
-        this.startNewGame();
+        if (authButtons && userInfo) {
+            if (isLoggedIn) {
+                authButtons.style.display = 'none';
+                userInfo.style.display = 'flex';
+                if (userEmail) userEmail.textContent = email;
+            } else {
+                authButtons.style.display = 'flex';
+                userInfo.style.display = 'none';
+                if (userEmail) userEmail.textContent = '';
+            }
+        }
     }
 
     setupEventListeners() {
@@ -148,123 +266,6 @@ class HangmanGame {
         // Share buttons
         this.whatsappShareBtn?.addEventListener('click', () => this.shareOnWhatsApp());
         this.copyResultBtn?.addEventListener('click', () => this.copyResult());
-    }
-
-    setupAuthUI() {
-        const elements = {
-            loginForm: document.getElementById('login-form'),
-            signupForm: document.getElementById('signup-form'),
-            loginModal: document.getElementById('login-modal'),
-            signupModal: document.getElementById('signup-modal'),
-            loginLink: document.getElementById('login-link'),
-            signupLink: document.getElementById('signup-link'),
-            loginGuest: document.getElementById('login-guest'),
-            signupGuest: document.getElementById('signup-guest'),
-            guestBtnMain: document.getElementById('guest-btn-main'),
-            logoutBtn: document.getElementById('logout-btn')
-        };
-
-        // Show login modal by default
-        if (elements.loginModal) {
-            elements.loginModal.style.display = 'flex';
-        }
-
-        // Switch between login and signup modals
-        elements.loginLink?.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (elements.signupModal) elements.signupModal.style.display = 'none';
-            if (elements.loginModal) elements.loginModal.style.display = 'flex';
-        });
-
-        elements.signupLink?.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (elements.loginModal) elements.loginModal.style.display = 'none';
-            if (elements.signupModal) elements.signupModal.style.display = 'flex';
-        });
-
-        // Handle guest mode
-        const handleGuestMode = () => {
-            if (elements.loginModal) elements.loginModal.style.display = 'none';
-            if (elements.signupModal) elements.signupModal.style.display = 'none';
-            this.updateAuthUI(false);
-            this.startNewGame();
-        };
-
-        // Add guest mode handlers to all guest buttons
-        [elements.loginGuest, elements.signupGuest, elements.guestBtnMain].forEach(btn => {
-            btn?.addEventListener('click', handleGuestMode);
-        });
-
-        // Handle login
-        elements.loginForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email')?.value;
-            const password = document.getElementById('login-password')?.value;
-
-            if (!email || !password) {
-                console.error('Email or password missing');
-                return;
-            }
-
-            try {
-                await signInWithEmailAndPassword(this.auth, email, password);
-                if (elements.loginModal) elements.loginModal.style.display = 'none';
-                this.updateAuthUI(true);
-                this.startNewGame();
-            } catch (error) {
-                console.error('Login error:', error);
-                alert(error.message);
-            }
-        });
-
-        // Handle signup
-        elements.signupForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signup-email')?.value;
-            const password = document.getElementById('signup-password')?.value;
-
-            if (!email || !password) {
-                console.error('Email or password missing');
-                return;
-            }
-
-            try {
-                await createUserWithEmailAndPassword(this.auth, email, password);
-                if (elements.signupModal) elements.signupModal.style.display = 'none';
-                this.updateAuthUI(true);
-                this.startNewGame();
-            } catch (error) {
-                console.error('Signup error:', error);
-                alert(error.message);
-            }
-        });
-
-        // Handle logout
-        elements.logoutBtn?.addEventListener('click', async () => {
-            try {
-                await signOut(this.auth);
-                this.updateAuthUI(false);
-                this.startNewGame();
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Error signing out: ' + error.message);
-            }
-        });
-    }
-
-    updateAuthUI(isLoggedIn) {
-        const authButtons = document.querySelector('.auth-buttons');
-        const userInfo = document.querySelector('.user-info');
-        
-        if (authButtons && userInfo) {
-            if (isLoggedIn) {
-                authButtons.style.display = 'none';
-                userInfo.style.display = 'flex';
-            } else {
-                authButtons.style.display = 'flex';
-                userInfo.style.display = 'none';
-            }
-        }
     }
 
     startNewGame() {
@@ -407,11 +408,24 @@ class HangmanGame {
         localStorage.setItem('theme', this.currentTheme);
         
         // Update theme toggle icon
-        const sunIcon = this.themeToggle.querySelector('.sun-icon');
-        const moonIcon = this.themeToggle.querySelector('.moon-icon');
+        const sunIcon = this.themeToggle?.querySelector('.sun-icon');
+        const moonIcon = this.themeToggle?.querySelector('.moon-icon');
         if (sunIcon && moonIcon) {
             sunIcon.style.display = this.currentTheme === 'light' ? 'none' : 'block';
             moonIcon.style.display = this.currentTheme === 'light' ? 'block' : 'none';
         }
     }
 }
+
+// Initialize game when DOM is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing game...');
+    try {
+        game = new HangmanGame();
+        game.init();
+        console.log('Game initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize game:', error);
+        showError('Failed to initialize game. Please refresh the page.');
+    }
+});
