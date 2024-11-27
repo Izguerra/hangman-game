@@ -1,18 +1,29 @@
 import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './firebase-config.js';
 
+let game = null;
+
+// Initialize game when DOM is fully loaded
+window.addEventListener('load', () => {
+    console.log('Window loaded, initializing game...');
+    try {
+        game = new HangmanGame();
+        game.init();
+        console.log('Game initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize game:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+        errorDiv.textContent = 'Failed to initialize game. Please refresh the page.';
+        document.body.appendChild(errorDiv);
+    }
+});
+
 class HangmanGame {
     constructor() {
         // Initialize Firebase
         this.auth = auth;
         this.db = db;
-        
-        // Initialize game when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
-        } else {
-            // Small delay to ensure all scripts are loaded
-            setTimeout(() => this.init(), 0);
-        }
+        console.log('HangmanGame instance created');
     }
 
     init() {
@@ -404,9 +415,3 @@ class HangmanGame {
         }
     }
 }
-
-// Initialize game on page load
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Content Loaded');
-    new HangmanGame();
-});
