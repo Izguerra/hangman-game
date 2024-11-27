@@ -6,7 +6,7 @@ class HangmanGame {
         this.auth = auth;
         this.db = db;
         
-        // Wait for DOM content to be loaded
+        // Initialize game when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
@@ -15,8 +15,21 @@ class HangmanGame {
     }
 
     init() {
-        this.setupAuthUI();
-        this.initializeGame();
+        try {
+            // Get DOM Elements first
+            this.getDOMElements();
+            
+            // Then set up event listeners
+            this.setupEventListeners();
+            
+            // Then set up auth UI
+            this.setupAuthUI();
+            
+            // Finally initialize game
+            this.initializeGame();
+        } catch (error) {
+            console.error('Initialization error:', error);
+        }
     }
 
     initializeGame() {
@@ -40,12 +53,6 @@ class HangmanGame {
         // Initialize theme
         this.currentTheme = localStorage.getItem('theme') || 'light';
         document.body.classList.toggle('dark-theme', this.currentTheme === 'dark');
-
-        // Get DOM Elements
-        this.getDOMElements();
-        
-        // Set up event listeners
-        this.setupEventListeners();
         
         // Start new game
         this.startNewGame();
@@ -123,8 +130,8 @@ class HangmanGame {
             signupModal: document.getElementById('signup-modal'),
             loginLink: document.getElementById('login-link'),
             signupLink: document.getElementById('signup-link'),
-            loginGuest: document.getElementById('login-guest'),
-            signupGuest: document.getElementById('signup-guest'),
+            loginGuest: document.getElementById('login-guest-btn'),
+            signupGuest: document.getElementById('signup-guest-btn'),
             logoutBtn: document.getElementById('logout-btn')
         };
 
