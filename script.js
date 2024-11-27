@@ -10,12 +10,14 @@ class HangmanGame {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
-            this.init();
+            // Small delay to ensure all scripts are loaded
+            setTimeout(() => this.init(), 0);
         }
     }
 
     init() {
         try {
+            console.log('Initializing game...');
             // Get DOM Elements first
             this.getDOMElements();
             
@@ -27,8 +29,54 @@ class HangmanGame {
             
             // Finally initialize game
             this.initializeGame();
+            
+            console.log('Game initialized successfully');
         } catch (error) {
             console.error('Initialization error:', error);
+            // Show user-friendly error
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+            errorDiv.textContent = 'Failed to initialize game. Please refresh the page.';
+            document.body.appendChild(errorDiv);
+        }
+    }
+
+    getDOMElements() {
+        console.log('Getting DOM elements...');
+        // Get all required DOM elements
+        const elements = {
+            wordDisplay: document.getElementById('word-display'),
+            keyboard: document.getElementById('keyboard'),
+            messageDisplay: document.getElementById('message'),
+            categoryDisplay: document.getElementById('category'),
+            hangmanSvg: document.getElementById('hangman'),
+            gameOverModal: document.getElementById('game-over-modal'),
+            gameOverTitle: document.getElementById('game-over-title'),
+            gameOverMessage: document.getElementById('game-over-message'),
+            playAgainBtn: document.getElementById('play-again'),
+            whatsappShareBtn: document.getElementById('whatsapp-share'),
+            copyResultBtn: document.getElementById('copy-result'),
+            themeToggle: document.getElementById('theme-toggle'),
+            newGameBtn: document.getElementById('new-game-btn')
+        };
+
+        // Log which elements were found and which weren't
+        Object.entries(elements).forEach(([key, value]) => {
+            if (!value) {
+                console.warn(`Missing DOM element: ${key}`);
+            }
+        });
+
+        // Assign elements to instance
+        Object.assign(this, elements);
+
+        // Check for required elements
+        const required = ['wordDisplay', 'keyboard', 'messageDisplay', 'categoryDisplay', 'hangmanSvg'];
+        const missing = required.filter(key => !elements[key]);
+        
+        if (missing.length > 0) {
+            console.error('Missing required DOM elements:', missing);
+            throw new Error(`Required DOM elements not found: ${missing.join(', ')}`);
         }
     }
 
@@ -56,37 +104,6 @@ class HangmanGame {
         
         // Start new game
         this.startNewGame();
-    }
-
-    getDOMElements() {
-        // Get all required DOM elements
-        const elements = {
-            wordDisplay: document.getElementById('word-display'),
-            keyboard: document.getElementById('keyboard'),
-            messageDisplay: document.getElementById('message'),
-            categoryDisplay: document.getElementById('category'),
-            hangmanSvg: document.getElementById('hangman'),
-            gameOverModal: document.getElementById('game-over-modal'),
-            gameOverTitle: document.getElementById('game-over-title'),
-            gameOverMessage: document.getElementById('game-over-message'),
-            playAgainBtn: document.getElementById('play-again'),
-            whatsappShareBtn: document.getElementById('whatsapp-share'),
-            copyResultBtn: document.getElementById('copy-result'),
-            themeToggle: document.getElementById('theme-toggle'),
-            newGameBtn: document.getElementById('new-game-btn')
-        };
-
-        // Assign elements to instance
-        Object.assign(this, elements);
-
-        // Check for required elements
-        const required = ['wordDisplay', 'keyboard', 'messageDisplay', 'categoryDisplay', 'hangmanSvg'];
-        const missing = required.filter(key => !elements[key]);
-        
-        if (missing.length > 0) {
-            console.error('Missing required DOM elements:', missing);
-            throw new Error(`Required DOM elements not found: ${missing.join(', ')}`);
-        }
     }
 
     setupEventListeners() {
@@ -130,8 +147,9 @@ class HangmanGame {
             signupModal: document.getElementById('signup-modal'),
             loginLink: document.getElementById('login-link'),
             signupLink: document.getElementById('signup-link'),
-            loginGuest: document.getElementById('login-guest-btn'),
-            signupGuest: document.getElementById('signup-guest-btn'),
+            loginGuest: document.getElementById('login-guest'),
+            signupGuest: document.getElementById('signup-guest'),
+            guestBtnMain: document.getElementById('guest-btn-main'),
             logoutBtn: document.getElementById('logout-btn')
         };
 
@@ -161,8 +179,10 @@ class HangmanGame {
             this.startNewGame();
         };
 
-        elements.loginGuest?.addEventListener('click', handleGuestMode);
-        elements.signupGuest?.addEventListener('click', handleGuestMode);
+        // Add guest mode handlers to all guest buttons
+        [elements.loginGuest, elements.signupGuest, elements.guestBtnMain].forEach(btn => {
+            btn?.addEventListener('click', handleGuestMode);
+        });
 
         // Handle login
         elements.loginForm?.addEventListener('submit', async (e) => {
