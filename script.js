@@ -1,26 +1,30 @@
 import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './firebase-config.js';
 
-let game = null;
-
-// Helper function to show errors
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
-    errorDiv.textContent = message;
-    document.body.appendChild(errorDiv);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => errorDiv.remove(), 5000);
-}
-
 class HangmanGame {
     constructor() {
-        console.log('HangmanGame instance created');
-        
-        // Initialize Firebase
-        this.auth = auth;
-        this.db = db;
+        // Wait for DOM to be ready before initializing
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
+    }
 
+    init() {
+        try {
+            console.log('Initializing game...');
+            this.initializeGameState();
+            this.getDOMElements();
+            this.setupEventListeners();
+            this.setupAuthUI();
+            this.startNewGame();
+        } catch (error) {
+            console.error('Initialization error:', error);
+            this.showError('Failed to initialize game. Please refresh the page.');
+        }
+    }
+
+    initializeGameState() {
         // Initialize game state
         this.words = {
             programming: ['PYTHON', 'JAVASCRIPT', 'JAVA', 'HTML', 'CSS', 'REACT', 'ANGULAR', 'VUE', 'TYPESCRIPT', 'PHP'],
@@ -37,38 +41,14 @@ class HangmanGame {
         this.triesLeft = this.maxTries;
         this.gameOver = false;
         
-        // Initialize theme from localStorage
+        // Initialize theme
         this.currentTheme = localStorage.getItem('theme') || 'light';
         document.body.classList.toggle('dark-theme', this.currentTheme === 'dark');
     }
 
-    init() {
-        try {
-            console.log('Initializing game...');
-            
-            // Get DOM Elements first
-            this.getDOMElements();
-            
-            // Then set up event listeners
-            this.setupEventListeners();
-            
-            // Then set up auth UI
-            this.setupAuthUI();
-            
-            // Finally start new game
-            this.startNewGame();
-            
-            console.log('Game initialized successfully');
-        } catch (error) {
-            console.error('Initialization error:', error);
-            showError('Failed to initialize game. Please refresh the page.');
-        }
-    }
-
     getDOMElements() {
-        console.log('Getting DOM elements...');
         // Get all required DOM elements
-        const elements = {
+        this.elements = {
             wordDisplay: document.getElementById('word-display'),
             keyboard: document.getElementById('keyboard'),
             messageDisplay: document.getElementById('message'),
@@ -81,46 +61,113 @@ class HangmanGame {
             whatsappShareBtn: document.getElementById('whatsapp-share'),
             copyResultBtn: document.getElementById('copy-result'),
             themeToggle: document.getElementById('theme-toggle'),
-            newGameBtn: document.getElementById('new-game-btn')
-        };
-
-        // Log which elements were found and which weren't
-        Object.entries(elements).forEach(([key, value]) => {
-            if (!value) {
-                console.warn(`Missing DOM element: ${key}`);
-            }
-        });
-
-        // Assign elements to instance
-        Object.assign(this, elements);
-
-        // Check for required elements
-        const required = ['wordDisplay', 'keyboard', 'messageDisplay', 'categoryDisplay', 'hangmanSvg'];
-        const missing = required.filter(key => !elements[key]);
-        
-        if (missing.length > 0) {
-            console.error('Missing required DOM elements:', missing);
-            throw new Error(`Required DOM elements not found: ${missing.join(', ')}`);
-        }
-    }
-
-    setupAuthUI() {
-        const elements = {
+            newGameBtn: document.getElementById('new-game-btn'),
             loginForm: document.getElementById('login-form'),
             signupForm: document.getElementById('signup-form'),
             loginModal: document.getElementById('login-modal'),
             signupModal: document.getElementById('signup-modal'),
             loginLink: document.getElementById('login-link'),
             signupLink: document.getElementById('signup-link'),
-            loginGuest: document.getElementById('login-guest-btn'), // Updated ID
-            signupGuest: document.getElementById('signup-guest-btn'), // Updated ID
+            loginGuest: document.getElementById('login-guest-btn'),
+            signupGuest: document.getElementById('signup-guest-btn'),
             guestBtnMain: document.getElementById('guest-btn-main'),
             logoutBtn: document.getElementById('logout-btn'),
             userEmail: document.getElementById('user-email')
         };
 
+        // Verify required elements exist
+        const required = ['wordDisplay', 'keyboard', 'messageDisplay', 'categoryDisplay', 'hangmanSvg'];
+        const missing = required.filter(key => !this.elements[key]);
+        
+        if (missing.length > 0) {
+            throw new Error(`Required DOM elements not found: ${missing.join(', ')}`);
+        }
+    }
+
+    setupEventListeners() {
+        // Keyboard clicks
+        this.elements.keyboard?.addEventListener('click', (e) => {
+            const key = e.target.closest('.key');
+            if (key && !this.gameOver) {
+                this.handleGuess(key.dataset.key);
+            }
+        });
+
+        // Physical keyboard input
+        document.addEventListener('keydown', (e) => {
+            if (!this.gameOver && /^[a-zA-Z]$/.test(e.key)) {
+                this.handleGuess(e.key.toUpperCase());
+            }
+        });
+
+        // Theme toggle
+        this.elements.themeToggle?.addEventListener('click', () => this.toggleTheme());
+
+        // New game button
+        this.elements.newGameBtn?.addEventListener('click', () => this.startNewGame());
+
+        // Play again button
+        this.elements.playAgainBtn?.addEventListener('click', () => {
+            if (this.elements.gameOverModal) {
+                this.elements.gameOverModal.style.display = 'none';
+            }
+            this.startNewGame();
+        });
+
+        // Share buttons
+        this.elements.whatsappShareBtn?.addEventListener('click', () => this.shareOnWhatsApp());
+        this.elements.copyResultBtn?.addEventListener('click', () => this.copyResult());
+    }
+
+    handleGuess(letter) {
+        if (!letter || this.gameOver || this.guessedLetters.has(letter)) {
+            return;
+        }
+
+        this.guessedLetters.add(letter);
+        const key = this.elements.keyboard?.querySelector(`[data-key="${letter}"]`);
+        
+        if (this.currentWord.includes(letter)) {
+            key?.classList.add('correct');
+            this.updateWordDisplay();
+            if (this.checkWin()) {
+                this.endGame(true);
+            }
+        } else {
+            key?.classList.add('wrong');
+            this.triesLeft--;
+            this.updateHangman();
+            if (this.triesLeft === 0) {
+                this.endGame(false);
+            }
+        }
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    setupAuthUI() {
+        const elements = {
+            loginForm: this.elements.loginForm,
+            signupForm: this.elements.signupForm,
+            loginModal: this.elements.loginModal,
+            signupModal: this.elements.signupModal,
+            loginLink: this.elements.loginLink,
+            signupLink: this.elements.signupLink,
+            loginGuest: this.elements.loginGuest,
+            signupGuest: this.elements.signupGuest,
+            guestBtnMain: this.elements.guestBtnMain,
+            logoutBtn: this.elements.logoutBtn,
+            userEmail: this.elements.userEmail
+        };
+
         // Show login modal by default for non-authenticated users
-        if (!this.auth.currentUser && elements.loginModal) {
+        if (!auth.currentUser && elements.loginModal) {
             elements.loginModal.style.display = 'flex';
         }
 
@@ -162,18 +209,18 @@ class HangmanGame {
             const password = document.getElementById('login-password')?.value;
 
             if (!email || !password) {
-                showError('Email and password are required');
+                this.showError('Email and password are required');
                 return;
             }
 
             try {
-                await signInWithEmailAndPassword(this.auth, email, password);
+                await signInWithEmailAndPassword(auth, email, password);
                 if (elements.loginModal) elements.loginModal.style.display = 'none';
                 this.updateAuthUI(true, email);
                 this.startNewGame();
             } catch (error) {
                 console.error('Login error:', error);
-                showError(error.message);
+                this.showError(error.message);
             }
         });
 
@@ -184,35 +231,35 @@ class HangmanGame {
             const password = document.getElementById('signup-password')?.value;
 
             if (!email || !password) {
-                showError('Email and password are required');
+                this.showError('Email and password are required');
                 return;
             }
 
             try {
-                await createUserWithEmailAndPassword(this.auth, email, password);
+                await createUserWithEmailAndPassword(auth, email, password);
                 if (elements.signupModal) elements.signupModal.style.display = 'none';
                 this.updateAuthUI(true, email);
                 this.startNewGame();
             } catch (error) {
                 console.error('Signup error:', error);
-                showError(error.message);
+                this.showError(error.message);
             }
         });
 
         // Handle logout
         elements.logoutBtn?.addEventListener('click', async () => {
             try {
-                await signOut(this.auth);
+                await signOut(auth);
                 this.updateAuthUI(false);
                 if (elements.loginModal) elements.loginModal.style.display = 'flex';
             } catch (error) {
                 console.error('Logout error:', error);
-                showError('Error signing out: ' + error.message);
+                this.showError('Error signing out: ' + error.message);
             }
         });
 
         // Update UI based on initial auth state
-        this.auth.onAuthStateChanged((user) => {
+        auth.onAuthStateChanged((user) => {
             this.updateAuthUI(!!user, user?.email);
         });
     }
@@ -220,7 +267,7 @@ class HangmanGame {
     updateAuthUI(isLoggedIn, email = '') {
         const authButtons = document.querySelector('.auth-buttons');
         const userInfo = document.querySelector('.user-info');
-        const userEmail = document.getElementById('user-email');
+        const userEmail = this.elements.userEmail;
         
         if (authButtons && userInfo) {
             if (isLoggedIn) {
@@ -233,41 +280,6 @@ class HangmanGame {
                 if (userEmail) userEmail.textContent = '';
             }
         }
-    }
-
-    setupEventListeners() {
-        // Keyboard clicks
-        this.keyboard?.addEventListener('click', (e) => {
-            const key = e.target.closest('.key');
-            if (key && !this.gameOver) {
-                this.handleGuess(key.dataset.key);
-            }
-        });
-
-        // Physical keyboard input
-        document.addEventListener('keydown', (e) => {
-            if (!this.gameOver && /^[a-zA-Z]$/.test(e.key)) {
-                this.handleGuess(e.key.toUpperCase());
-            }
-        });
-
-        // Theme toggle
-        this.themeToggle?.addEventListener('click', () => this.toggleTheme());
-
-        // New game button
-        this.newGameBtn?.addEventListener('click', () => this.startNewGame());
-
-        // Play again button
-        this.playAgainBtn?.addEventListener('click', () => {
-            if (this.gameOverModal) {
-                this.gameOverModal.style.display = 'none';
-            }
-            this.startNewGame();
-        });
-
-        // Share buttons
-        this.whatsappShareBtn?.addEventListener('click', () => this.shareOnWhatsApp());
-        this.copyResultBtn?.addEventListener('click', () => this.copyResult());
     }
 
     startNewGame() {
@@ -298,13 +310,13 @@ class HangmanGame {
         this.updateWordDisplay();
         this.updateHangman();
         this.resetKeyboard();
-        this.categoryDisplay.textContent = `Category: ${randomCategory.charAt(0).toUpperCase() + randomCategory.slice(1)}`;
-        this.messageDisplay.textContent = '';
-        this.gameOverModal.style.display = 'none';
+        this.elements.categoryDisplay.textContent = `Category: ${randomCategory.charAt(0).toUpperCase() + randomCategory.slice(1)}`;
+        this.elements.messageDisplay.textContent = '';
+        this.elements.gameOverModal.style.display = 'none';
     }
 
     updateWordDisplay() {
-        this.wordDisplay.innerHTML = this.currentWord
+        this.elements.wordDisplay.innerHTML = this.currentWord
             .split('')
             .map(letter => `<span class="letter">${this.guessedLetters.has(letter) ? letter : '_'}</span>`)
             .join('');
@@ -312,7 +324,7 @@ class HangmanGame {
 
     updateHangman() {
         // Hide all body parts first
-        const bodyParts = this.hangmanSvg.querySelectorAll('.body-part');
+        const bodyParts = this.elements.hangmanSvg.querySelectorAll('.body-part');
         bodyParts.forEach(part => part.style.opacity = '0');
         
         // Show body parts based on remaining tries
@@ -325,35 +337,11 @@ class HangmanGame {
     }
 
     resetKeyboard() {
-        const keys = this.keyboard.querySelectorAll('.key');
+        const keys = this.elements.keyboard.querySelectorAll('.key');
         keys.forEach(key => {
             key.classList.remove('correct', 'wrong');
             key.disabled = false;
         });
-    }
-
-    handleGuess(letter) {
-        if (!letter || this.gameOver || this.guessedLetters.has(letter)) {
-            return;
-        }
-
-        this.guessedLetters.add(letter);
-        const key = this.keyboard?.querySelector(`[data-key="${letter}"]`);
-        
-        if (this.currentWord.includes(letter)) {
-            key?.classList.add('correct');
-            this.updateWordDisplay();
-            if (this.checkWin()) {
-                this.endGame(true);
-            }
-        } else {
-            key?.classList.add('wrong');
-            this.triesLeft--;
-            this.updateHangman();
-            if (this.triesLeft === 0) {
-                this.endGame(false);
-            }
-        }
     }
 
     checkWin() {
@@ -362,21 +350,21 @@ class HangmanGame {
 
     endGame(won) {
         this.gameOver = true;
-        this.gameOverTitle.textContent = won ? 'Congratulations!' : 'Game Over';
-        this.gameOverMessage.textContent = won ? 
+        this.elements.gameOverTitle.textContent = won ? 'Congratulations!' : 'Game Over';
+        this.elements.gameOverMessage.textContent = won ? 
             `You won! The word was ${this.currentWord}` : 
             `You lost. The word was ${this.currentWord}`;
-        this.gameOverModal.style.display = 'flex';
+        this.elements.gameOverModal.style.display = 'flex';
     }
 
     shareOnWhatsApp() {
-        const result = `Hangman Game Result\n${this.gameOverTitle.textContent}\n${this.gameOverMessage.textContent}`;
+        const result = `Hangman Game Result\n${this.elements.gameOverTitle.textContent}\n${this.elements.gameOverMessage.textContent}`;
         const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(result)}`;
         window.open(url, '_blank');
     }
 
     copyResult() {
-        const result = `Hangman Game Result\n${this.gameOverTitle.textContent}\n${this.gameOverMessage.textContent}`;
+        const result = `Hangman Game Result\n${this.elements.gameOverTitle.textContent}\n${this.elements.gameOverMessage.textContent}`;
         navigator.clipboard.writeText(result)
             .then(() => alert('Result copied to clipboard!'))
             .catch(console.error);
@@ -388,8 +376,8 @@ class HangmanGame {
         localStorage.setItem('theme', this.currentTheme);
         
         // Update theme toggle icon
-        const sunIcon = this.themeToggle?.querySelector('.sun-icon');
-        const moonIcon = this.themeToggle?.querySelector('.moon-icon');
+        const sunIcon = this.elements.themeToggle?.querySelector('.sun-icon');
+        const moonIcon = this.elements.themeToggle?.querySelector('.moon-icon');
         if (sunIcon && moonIcon) {
             sunIcon.style.display = this.currentTheme === 'light' ? 'none' : 'block';
             moonIcon.style.display = this.currentTheme === 'light' ? 'block' : 'none';
@@ -397,15 +385,5 @@ class HangmanGame {
     }
 }
 
-// Initialize game when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing game...');
-    try {
-        game = new HangmanGame();
-        game.init();
-        console.log('Game initialized successfully');
-    } catch (error) {
-        console.error('Failed to initialize game:', error);
-        showError('Failed to initialize game. Please refresh the page.');
-    }
-});
+// Initialize game
+const game = new HangmanGame();
