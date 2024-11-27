@@ -237,17 +237,19 @@ class HangmanGame {
 
     setupEventListeners() {
         // Keyboard clicks
-        if (this.keyboard) {
-            this.keyboard.addEventListener('click', (e) => {
-                const key = e.target.closest('.key');
-                if (key) {
-                    this.handleKeyClick(e);
-                }
-            });
-        }
+        this.keyboard?.addEventListener('click', (e) => {
+            const key = e.target.closest('.key');
+            if (key && !this.gameOver) {
+                this.handleGuess(key.dataset.key);
+            }
+        });
 
         // Physical keyboard input
-        document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        document.addEventListener('keydown', (e) => {
+            if (!this.gameOver && /^[a-zA-Z]$/.test(e.key)) {
+                this.handleGuess(e.key.toUpperCase());
+            }
+        });
 
         // Theme toggle
         this.themeToggle?.addEventListener('click', () => this.toggleTheme());
@@ -330,54 +332,32 @@ class HangmanGame {
         });
     }
 
-    handleKeyClick(e) {
-        const key = e.target.closest('.key');
-        if (key && !key.disabled && !this.gameOver) {
-            const letter = key.textContent;
-            this.makeGuess(letter);
+    handleGuess(letter) {
+        if (!letter || this.gameOver || this.guessedLetters.has(letter)) {
+            return;
         }
-    }
 
-    handleKeyPress(e) {
-        if (this.gameOver) return;
-        
-        const letter = e.key.toUpperCase();
-        if (/^[A-Z]$/.test(letter) && !this.guessedLetters.has(letter)) {
-            const key = this.keyboard.querySelector(`[data-key="${letter}"]`);
-            if (key && !key.disabled) {
-                this.makeGuess(letter);
-            }
-        }
-    }
-
-    makeGuess(letter) {
-        if (this.guessedLetters.has(letter) || this.gameOver) return;
-        
         this.guessedLetters.add(letter);
-        const key = this.keyboard.querySelector(`[data-key="${letter}"]`);
+        const key = this.keyboard?.querySelector(`[data-key="${letter}"]`);
         
         if (this.currentWord.includes(letter)) {
-            // Correct guess
             key?.classList.add('correct');
             this.updateWordDisplay();
-            
-            // Check for win
-            if (this.currentWord.split('').every(l => this.guessedLetters.has(l))) {
+            if (this.checkWin()) {
                 this.endGame(true);
             }
         } else {
-            // Wrong guess
             key?.classList.add('wrong');
             this.triesLeft--;
             this.updateHangman();
-            
-            // Check for loss
             if (this.triesLeft === 0) {
                 this.endGame(false);
             }
         }
-        
-        key.disabled = true;
+    }
+
+    checkWin() {
+        return this.currentWord.split('').every(letter => this.guessedLetters.has(letter));
     }
 
     endGame(won) {
